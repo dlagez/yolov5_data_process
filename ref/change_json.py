@@ -1,34 +1,39 @@
 import json
-import cv2
 import os
-"""
-    img_names:所有图片的名字，得到路径下所有图片的名字
-    img_paths:图片所在路径，得到某张图片的路径和名字
-    labs_path：原始标签存放的位置。
-"""
-img_names = os.listdir('/media/ocean/大白菜U盘/mask-rcnn/label_test/20210510label/image_save')
-img_paths = '/media/ocean/大白菜U盘/mask-rcnn/label_test/20210510label/image_save/'
-labs_path = '/media/ocean/大白菜U盘/mask-rcnn/label_test/20210510label/image_label/'
 
-for image_name in img_names:
-    lab_name = image_name[:-3]
-    lab_path = labs_path + lab_name + 'json'
-    lab__new_path = img_paths + lab_name + 'json'
-    f = open(lab_path, 'r')
-    #file_name1 = '/media/ocean/大白菜U盘/mask-rcnn/label_test/1105-image.json'
-    img = img_paths + image_name
-    img = cv2.imread(img)
-    h, w, c = img.shape
-    content = f.read()
-    a = json.loads(content)
-    shape = []
-    for i in range(len(a['rice'])):
-        shape.append({"label": "rice", "points": a['rice'][i], "group_id": None, "shape_type": "polygon", "flags": {}})
-    for j in range(len(a['broken_rice'])):
-        shape.append({"label": "broken_rice", "points": a['broken_rice'][j], "group_id": None, "shape_type": "polygon", "flags": {}})
-    result = {"version": "4.5.7", "flags": {}, "shapes": shape, "imagePath": image_name, "imageData": None, "imageHeight": h,
-              "imageWidth": w, "lineColor": [0, 255, 0, 128], "fillColor": [255, 0, 0, 128]}
-    f.close()
+# txt文件路径
+txt_dir = "/data/file/yolo5/tmp/"
+txts = os.listdir(txt_dir)
+for file in txts:
+    file_name = os.path.splitext(file)[0]
+    file = txt_dir + file
+    txt_name, _ = os.path.splitext(file)
+    img_name = txt_name + '.jpg'
 
-    with open(lab__new_path, 'w') as json_file:
-        json.dump(result, json_file, indent=4)
+    with open(file, 'r', encoding="utf-8") as txt_file:
+        shape = []
+        for line in txt_file:
+            line = [float(x) for x in line.strip().split()]
+            label = str(int(line[0]))  # label
+            points = []  # row clomn
+            # yolo format
+            x_center_pixel = line[1] * 1920
+            y_center_pixel = line[2] * 1080
+            width = line[3] * 1920
+            high = line[4] * 1080
+            # labelme format
+            row_low = y_center_pixel - high / 2
+            row_high = y_center_pixel + high / 2
+            clomn_low = x_center_pixel - width / 2
+            clomn_high = x_center_pixel + width / 2
+            # row clomn json format
+            points.append([clomn_low, row_low])
+            points.append([clomn_high, row_high])
+            # shape json
+            shape.append({"label": label, "points": points, "group_id": None, "shape_type": "rectangle", "flags": {}})
+            # print(shape)
+        result = {"version": "4.5.6", "flags": {}, "shapes": shape, "imagePath": file_name + '.jpg', "imageData": None, "imageHeight": 1080, "imageWidth": 1920}
+        print(result)
+        json_path = "/data/file/yolo5/json/" + file_name + ".json"
+        with open(json_path, 'w') as json_file:
+            json.dump(result, json_file, indent=4)
