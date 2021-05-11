@@ -7,8 +7,6 @@ txts = os.listdir(txt_dir)
 for file in txts:
     file_name = os.path.splitext(file)[0]
     file = txt_dir + file
-    txt_name, _ = os.path.splitext(file)
-    img_name = txt_name + '.jpg'
 
     with open(file, 'r', encoding="utf-8") as txt_file:
         shape = []
